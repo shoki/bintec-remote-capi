@@ -1,0 +1,130 @@
+# Makefile - BinTec Remote CAPI Library
+# written by Heiner Steven <heiner.steven@odn.de>
+# @(#) Makefile.in	1.1 02/06/25
+#
+# And for you Linux users here the lorder:
+# hexdumpd.o
+# hexdump.o
+# libcapi2.o
+# userchk2.o
+# md5.o
+# rcapi.o
+# c_blockrw.o
+# rcapi2.o
+# libcapi.o
+# c_tcpopen.o
+# c_environ.o
+#
+
+SHELL	= /bin/sh
+
+CC	= @CC@
+LD	= ld
+DEFS	= -I. @DEFS@
+COPTS	= -g -O2
+CWARN	= -W -Wall
+CFLAGS	= $(COPTS) $(CWARN) $(DEFS)
+LIBS	= @LIBS@ @PORTOBJ@
+LORDER  = $(SHELL) ./lorder
+TSORT	= tsort
+LN	= ln
+
+AR	= ar rv
+INSTALL	= @INSTALL@
+RANLIB	= @RANLIB@
+
+.SUFFIXES:
+.SUFFIXES: .out .o .po .So .s .S .c .cc .cpp .cxx .m .C .f .y .l
+
+.c.o:
+	${CC} -fPIC -DPIC ${CFLAGS} -c $< -o $@
+	@${LD} -o $@.tmp -x -r $@
+	@mv $@.tmp $@
+
+prefix	= @prefix@
+bindir	= $(prefix)/bin
+libdir	= $(prefix)/lib
+incdir	= $(prefix)/include
+
+LIBCAPIINC	= capidef.h libcapi.h
+CAPIINC		= $(LIBCAPIINC) capiconf.h
+CAPIOBJDEP	= $(CAPIINC) Makefile
+CAPIOBJ		= c_environ.o c_tcpopen.o md5.o userchk2.o hexdump.o \
+		  hexdumpd.o c_blockrw.o
+
+LIBCAPIOBJ	= libcapi.o rcapi.o
+LIBCAPI2OBJ	= libcapi2.o rcapi2.o
+LIBCAPIOBJS	= $(LIBCAPIOBJ) $(LIBCAPI2OBJ) $(CAPIOBJ)
+CAPILIB		= libcapi.a
+CAPILIBVER	= 1
+CAPILIBNAME	= libcapi.so
+CAPILIBSO	= $(CAPILIBNAME).$(CAPILIBVER)
+CAPITRACEOBJ  	= capitrace.o capidump.o
+
+CAPIAPP		= capifax faxrecv capitrace connect capitest
+
+all:	$(CAPILIB) $(CAPIAPP)
+
+capitest:	Makefile capitest.o $(CAPILIB)
+	$(CC) -o $@ $(CFLAGS) capitest.o $(CAPILIB) $(LIBS)
+
+capitrace:	Makefile $(CAPITRACEOBJ) $(CAPILIB)
+	$(CC) -o $@ $(CFLAGS) $(CAPITRACEOBJ) $(CAPILIB) $(LIBS)
+
+connect:	Makefile connect.o $(CAPILIB)
+	$(CC) -o $@ $(CFLAGS) connect.o $(CAPILIB) $(LIBS)
+
+capifax:	Makefile capifax.o $(CAPILIB)
+	$(CC) -o $@ $(CFLAGS) capifax.o $(CAPILIB) $(LIBS)
+
+faxrecv:	Makefile faxrecv.o $(CAPILIB)
+	$(CC) -o $@ $(CFLAGS) faxrecv.o $(CAPILIB) $(LIBS)
+
+$(CAPILIB):	Makefile $(LIBCAPIOBJS) libcapi.h
+	@echo "### generating static archive ###"
+	@rm -f $@
+	$(AR) $@ $(LIBCAPIOBJS)
+	$(RANLIB) $@
+	@echo "### generating shared library ###"
+	$(CC) $(COPTS) $(CWARN) -shared -Wl,-x,-soname,$(CAPILIBSO)	\
+	-o $(CAPILIBSO) -Wl `$(LORDER) $(LIBCAPIOBJS) | $(TSORT)`
+
+capifax.o:	$(CAPIOBJDEP) capifax.c
+faxrecv.o:	$(CAPIOBJDEP) faxrecv.c
+libcapi.o:	$(CAPIOBJDEP)
+libcapi2.o:	$(CAPIOBJDEP)
+rcapi.o:	$(CAPIOBJDEP)
+rcapi2.o:	$(CAPIOBJDEP)
+userchk2.o:	$(CAPIOBJDEP) md5.h
+md5.o:		md5.h md5.c
+poll.o:		Makefile poll.c poll.h
+
+install:	all installdirs
+	@for prog in $(CAPIAPP);			\
+	do						\
+	    echo $(INSTALL) $$prog $(bindir);		\
+	    $(INSTALL) $$prog $(bindir) || exit 1;	\
+	done
+	@for lib in $(CAPILIB);				\
+	do						\
+	    echo $(INSTALL) $$lib $(libdir);		\
+	    $(INSTALL) $$lib $(libdir) || exit 1;	\
+	done						
+	@for inc in $(CAPIINC);				\
+	do						\
+	    echo $(INSTALL) $$inc $(incdir);		\
+	    $(INSTALL) $$inc $(incdir) || exit 1;	\
+	done
+	$(INSTALL) $(CAPILIBSO) $(libdir)
+	$(LN) -fs $(libdir)/$(CAPILIBSO) $(libdir)/$(CAPILIBNAME)
+
+installdirs:
+	@$(SHELL) mkinstalldirs $(prefix) $(bindir) $(libdir) $(incdir)
+
+clean:
+	rm -f $(CAPIAPP) $(CAPILIB) $(CAPILIBSO)
+	rm -f core *.o
+
+distclean: clean
+	rm -f Makefile capiconf.h
+	rm -f config.log config.status

@@ -1,0 +1,32 @@
+Content of this directory:
+Remote CAPI source files for UNIX, Version 1.7 02/08/02 16:31:46
+
+File            Description
+---------------------------------------------------------------------------
+README		This file
+c_environ.c	helper functions for environment variables
+c_tcpopen.c	open TCP connection
+capidef.h       header file for CAPI1.1 and CAPI2.0 definitions
+capifax.c       CAPI 2.0 example application to send a fax
+faxrecv.c       CAPI 2.0 example application to receive a fax
+libcapi.c       source file for the remote capi library CAPI 1.1
+libcapi.h       header file for the remote capi library
+libcapi2.c      source file for the remote capi library CAPI 2.0
+md5.c
+md5.h
+poll.c          poll() function for systems that only provide select()
+poll.h          header file for poll.c
+rcapi.c         source file for the remote capi interface CAPI 1.1
+rcapi2.c        source file for the remote capi interface CAPI 2.0
+userchk2.c
+
+Makefile.in	Makefile prototype; used by configure
+config.h.in	configuration variables prototype
+configure	
+configure.in
+install-sh	helper program: install program/library
+mkinstalldirs	helper program: crete installation directories
+
+libcapi.taz     compressed tar-file containing all of the files above
+                usage e.g.: uncompress < libcapi.taz | tar xvf -
+---------------------------------------------------------------------------
